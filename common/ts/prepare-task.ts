@@ -38,10 +38,9 @@ export default async function prepareTask(endpoint: Endpoint, rootPath: string) 
     tl.debug(`[SQ] Branch and PR parameters: ${JSON.stringify(props)}`);
   }
 
-  tl
-    .getDelimitedInput("extraProperties", "\n")
-    .filter(keyValue => !keyValue.startsWith("#"))
-    .map(keyValue => keyValue.split(/=(.+)/))
+  tl.getDelimitedInput("extraProperties", "\n")
+    .filter((keyValue) => !keyValue.startsWith("#"))
+    .map((keyValue) => keyValue.split(/=(.+)/))
     .forEach(([k, v]) => (props[k] = v));
 
   tl.setVariable("SONARQUBE_SCANNER_MODE", scannerMode);
@@ -51,7 +50,7 @@ export default async function prepareTask(endpoint: Endpoint, rootPath: string) 
     toCleanJSON({
       ...endpoint.toSonarProps(),
       ...scanner.toSonarProps(),
-      ...props
+      ...props,
     })
   );
 
@@ -67,47 +66,41 @@ async function branchFeatureSupported(endpoint) {
 }
 
 export async function populateBranchAndPrProps(props: { [key: string]: string }) {
-  const collectionUrl = tl.getVariable("System.TeamFoundationCollectionUri");
   const prId = tl.getVariable("System.PullRequest.PullRequestId");
-  const provider = tl.getVariable("Build.Repository.Provider");
+  let sourceBranch = branchName(tl.getVariable("Build.SourceBranch"));
+
+  tl.debug("DATA VERSION 4.10.4:");
+  tl.debug("addBranch: " + tl.getInput("addBranch"));
+  tl.debug("projectKey: " + tl.getInput("projectKey"));
+  tl.debug("projectName: " + tl.getInput("projectName"));
+  tl.debug("cliProjectKey: " + tl.getInput("cliProjectKey"));
+  tl.debug("cliProjectName: " + tl.getInput("cliProjectName"));
   if (prId) {
-    props["sonar.pullrequest.key"] = prId;
-    props["sonar.pullrequest.base"] = branchName(tl.getVariable("System.PullRequest.TargetBranch"));
-    props["sonar.pullrequest.branch"] = branchName(
-      tl.getVariable("System.PullRequest.SourceBranch")
-    );
-    if (provider === "TfsGit") {
-      props["sonar.pullrequest.provider"] = "vsts";
-      props["sonar.pullrequest.vsts.instanceUrl"] = collectionUrl;
-      props["sonar.pullrequest.vsts.project"] = tl.getVariable("System.TeamProject");
-      props["sonar.pullrequest.vsts.repository"] = tl.getVariable(REPO_NAME_VAR);
-    } else if (provider === "GitHub" || provider === "GitHubEnterprise") {
-      props["sonar.pullrequest.key"] = tl.getVariable("System.PullRequest.PullRequestNumber");
-      props["sonar.pullrequest.provider"] = "github";
-      props["sonar.pullrequest.github.repository"] = tl.getVariable(REPO_NAME_VAR);
-    } else if (provider === "Bitbucket") {
-      props["sonar.pullrequest.provider"] = "bitbucketcloud";
-    } else {
-      tl.warning(`Unsupported PR provider '${provider}'`);
-      props["sonar.scanner.skip"] = "true";
-    }
-  } else {
-    let isDefaultBranch = true;
-    const currentBranch = tl.getVariable("Build.SourceBranch");
-    if (provider === "TfsGit") {
-      isDefaultBranch = currentBranch === (await getDefaultBranch(collectionUrl));
-    } else if (provider === "Git" || provider === "GitHub") {
-      // TODO for GitHub we should get the default branch configured on the repo
-      isDefaultBranch = currentBranch === "refs/heads/master";
-    } else if (provider === "Bitbucket") {
-      // TODO for Bitbucket Cloud we should get the main branch configured on the repo
-      isDefaultBranch = currentBranch === "refs/heads/master";
-    } else if (provider === "Svn") {
-      isDefaultBranch = currentBranch === "trunk";
-    }
-    if (!isDefaultBranch) {
-      // VSTS-165 don't use Build.SourceBranchName
-      props["sonar.branch.name"] = branchName(tl.getVariable("Build.SourceBranch"));
+    sourceBranch = branchName(tl.getVariable("System.PullRequest.SourceBranch"));
+  }
+  tl.debug("branchName: " + sourceBranch);
+  if (tl.getInput("addBranch") === "true") {
+    const scannerMode: ScannerMode = ScannerMode[tl.getInput("scannerMode")];
+    if (scannerMode === ScannerMode.MSBuild) {
+      const projectKey = tl.getInput("projectKey", true);
+      const projectName = tl.getInput("projectName", true);
+      props["sonar.projectKey"] = projectKey + "-" + sourceBranch;
+      props["sonar.projectName"] = projectName + " " + sourceBranch;
+
+      tl.debug("FINAL SET projectKey: " + projectKey);
+      tl.debug("FINAL SET projectName: " + projectName);
+      tl.debug("props[sonar.projectKey]: " + props["sonar.projectKey"]);
+      tl.debug("props[sonar.projectName]: " + props["sonar.projectName"]);
+    } else if (scannerMode === ScannerMode.CLI) {
+      const projectKey = tl.getInput("cliProjectKey", true);
+      const projectName = tl.getInput("cliProjectName");
+      props["sonar.projectKey"] = projectKey + "-" + sourceBranch;
+      props["sonar.projectName"] = projectName + " " + sourceBranch;
+
+      tl.debug("FINAL SET cliProjectKey: " + projectKey);
+      tl.debug("FINAL SET cliProjectName: " + projectName);
+      tl.debug("props[sonar.cliProjectKey]: " + props["sonar.cliProjectKey"]);
+      tl.debug("props[sonar.cliProjectName]: " + props["sonar.cliProjectName"]);
     }
   }
 }
