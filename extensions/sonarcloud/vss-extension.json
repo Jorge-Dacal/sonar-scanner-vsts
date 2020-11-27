@@ -7,7 +7,7 @@
     "color": "rgb(243, 243, 243)",
     "theme": "light"
   },
-  "publisher": "sonarsource",
+  "publisher": "ADC-devonfw",
   "targets": [
     {
       "id": "Microsoft.VisualStudio.Services.Cloud"

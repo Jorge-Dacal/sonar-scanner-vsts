@@ -1,8 +1,8 @@
 {
-  "id": "15B84CA1-B62F-4A2A-A403-89B77A063157",
-  "name": "SonarQubePrepare",
-  "friendlyName": "Prepare Analysis Configuration",
-  "description": "Prepare SonarQube analysis configuration",
+  "id": "15B84CA1-B62F-4A2A-A403-89B77A063D5A",
+  "name": "devonfw-SonarQubePrepare",
+  "friendlyName": "devonfw Prepare Analysis Configuration",
+  "description": "devonfw Prepare SonarQube analysis configuration",
   "helpMarkDown":
     "[More Information](http://redirect.sonarsource.com/doc/install-configure-scanner-tfs-ts.html)",
   "category": "Build",
@@ -11,7 +11,7 @@
   "version": {
     "Major": 4,
     "Minor": 10,
-    "Patch": 0
+    "Patch": 4
   },
   "releaseNotes":
     "* __Support non MSBuild projects:__ This task can be used to configure analysis also for non MSBuild projects.",
@@ -27,7 +27,7 @@
   "inputs": [
     {
       "name": "SonarQube",
-      "type": "connectedService:sonarqube",
+      "type": "connectedService:devonfw-sonarqube",
       "label": "SonarQube Server Endpoint",
       "required": true,
       "helpMarkDown":
